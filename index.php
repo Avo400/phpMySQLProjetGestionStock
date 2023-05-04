@@ -53,7 +53,7 @@
         }
 ?>
 <?php
-     
+     $produitMagasinIdRetrait = 0;
     //enregistrer les retraits de produits
     if (isset($_POST["enregistrerProduit2"]) && !empty($nomProduitRetrait) && !empty($numeroMagasinRetrait) && !empty($quantiteProduitRetrait) && !empty($dateExpirationRetrait)) {
         $queryRetrait = "UPDATE produitmagasin 
@@ -63,9 +63,29 @@
             (SELECT id FROM produit WHERE nom='" . $nomProduitRetrait . "')
             AND magasinId=(SELECT id FROM magasin WHERE id='" . $numeroMagasinRetrait . "')
             AND dateExpiration='" . $dateExpirationRetrait . "';";
-
          mysqli_query($conn, $queryRetrait);
 
+        //Insertion de l'action de retrait dans l'historique
+        //Obtention de l id de la dernière ligne maj de la table produitmagasin (même requête que queryRetrait mais en select)
+        $queryGetProduitmagasinId = "SELECT id FROM produitmagasin WHERE produitId=
+        (SELECT id FROM produit WHERE nom='" . $nomProduitRetrait . "')
+        AND magasinId=(SELECT id FROM magasin WHERE id='" . $numeroMagasinRetrait . "')
+        AND dateExpiration='" . $dateExpirationRetrait . "';";
+      
+       $response = array();
+       $result = mysqli_query($conn, $queryGetProduitmagasinId);
+       while ($row = mysqli_fetch_array($result, MYSQLI_ASSOC)) {
+           $response[] = $row;
+       }
+        $produitMagasinIdRetrait = $response[0]['id'];
+       
+        $queryRetraitHistorique = "INSERT INTO historique(actionid, dateAction, produitmagasinId) VALUES 
+         (2, '" . $currentDateTime . "', '" . $produitMagasinIdRetrait . "');";
+
+         mysqli_query($conn, $queryRetraitHistorique);
+
+    } else {
+        echo "Veuillez saisir un produit correct !";
     }
 
 ?>
@@ -169,6 +189,22 @@
             </table>
         </fieldset>
         </form>
+        <h3> Liste des produits déposés ou retirés dans le stock </h3>
+
+
+
+
+        <form action="" method="POST">
+            <fieldset>
+            <table>
+            <tr><td></td><td><input type="submit" name="stock1" value="Quantité en stock par produit" class="bouton4"></td></tr>
+            <tr><td></td><td><input type="submit" name="stock2" value="Quantité en stock par produit et par date d'expiration" class="bouton4" ></td></tr>
+            <tr><td></td><td><input type="submit" name="stock3" value="Quantité en stock par magasin et par produit" class="bouton4" ></td></tr>
+            <tr><td></td><td><input type="submit" name="stock4" value="Quantité en stock par magasin par produit et par date d'expiration" class="bouton4"></td></tr>
+            </table>
+            </fieldset>
+        </form>
+        
     </div>
        
 </body>
